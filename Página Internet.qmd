@@ -1,0 +1,100 @@
+---
+title: "Dyan Paolo de Souza"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(palmerpenguins)
+```
+
+## Gr??fico 1
+
+1
+
+```{r}
+#| label: grafico 1
+#| warning: false
+#| echo: false
+
+#install.packages("ggrepel")
+
+# Carregar pacotes
+library(ggplot2)
+library(WDI)
+library(dplyr)
+library(ggrepel)  # Para evitar sobreposi????o dos r??tulos
+
+# Definir vari??veis
+variaveis <- c("FP.CPI.TOTL.ZG", "SL.UEM.TOTL.ZS")
+
+# Lista de pa??ses da Am??rica do Sul (c??digos ISO2)
+paises_america_sul <- c("AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE")
+
+# Buscar dados para a Am??rica do Sul no ano de 2022
+dados_corte <- WDI(indicator = variaveis, country = paises_america_sul, start = 2022, end = 2022) %>%
+  na.omit() %>%
+  rename(Inflacao = FP.CPI.TOTL.ZG, Desemprego = SL.UEM.TOTL.ZS)
+
+# Criar gr??fico de dispers??o com r??tulos
+ggplot(dados_corte, aes(x = Inflacao, y = Desemprego, label = country)) +
+  geom_point(color = "blue", size = 3) +
+  geom_text_repel(size = 4, box.padding = 0.5) +  # R??tulos sem sobreposi????o
+  geom_smooth(method = "lm", color = "red", se = FALSE) +  # Linha de tend??ncia
+  labs(
+    title = "Rela????o entre Infla????o e Desemprego na Am??rica do Sul (2022)",
+    x = "Infla????o (%)",
+    y = "Taxa de Desemprego (%)",
+    caption = "Fonte: Banco Mundial (WDI)"
+  ) +
+  theme_minimal()
+```
+
+## Gr??fico 2
+
+1
+
+```{r}
+#| label: grafico 2
+#| warning: false
+#| echo: false
+
+# Carregar pacotes
+library(ggplot2)
+library(WDI)
+library(dplyr)
+
+# Definir vari??veis
+variaveis <- c("FP.CPI.TOTL.ZG", "SL.UEM.TOTL.ZS")
+
+# Baixar dados do Banco Mundial para o Brasil
+dados_brasil <- WDI(indicator = variaveis, country = "BR", start = 1995, end = 2023) %>%
+  rename(Inflacao = FP.CPI.TOTL.ZG, Desemprego = SL.UEM.TOTL.ZS) %>%
+  na.omit()
+
+# Criar gr??fico melhorado
+ggplot(dados_brasil, aes(x = year)) +
+  geom_line(aes(y = Desemprego, color = "Desemprego"), size = 1.2) +
+  geom_line(aes(y = Inflacao / 2, color = "Infla????o"), size = 1.2) +  # Ajustando escala
+  scale_y_continuous(
+    name = "Taxa de Desemprego (%)",
+    sec.axis = sec_axis(~ . * 2, name = "Infla????o (%)")  # Ajuste de escala da infla????o
+  ) +
+  scale_color_manual(values = c("Desemprego" = "blue", "Infla????o" = "red")) +
+  labs(
+    title = "Evolu????o da Infla????o e do Desemprego no Brasil (1995-2023)",
+    x = "Ano",
+    color = "Indicador",
+    caption = "Fonte: Banco Mundial (WDI)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
+    legend.position = "top",
+    legend.title = element_blank()
+  )
+```
