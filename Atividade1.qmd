@@ -1,0 +1,112 @@
+---
+title: "Dyan Paolo de Souza"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(palmerpenguins)
+library(ggplot2)
+library(WDI)
+library(dplyr)
+library(ggrepel)
+```
+
+```{r}
+#| label: load-data
+#| include: false
+
+# Código de carregamento de dados
+
+options(scipen = 999)
+
+# Definir variáveis do Banco Mundial
+variaveis <- c("FP.CPI.TOTL.ZG", "SL.UEM.TOTL.ZS")
+
+# Definir países da América do Sul
+paises_america_sul <- c("AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE")
+
+# Obter dados da América do Sul
+dados_corte <- WDI(indicator = variaveis, country = paises_america_sul, start = 2021, end = 2023)
+
+# Obter dados do Brasil (1995-2023)
+dados_brasil <- WDI(indicator = variaveis, country = "BR", start = 1995, end = 2023)
+
+# Verificar se os dados foram carregados corretamente
+if (nrow(dados_corte) == 0) stop("Erro: Nenhum dado para a América do Sul foi carregado.")
+if (nrow(dados_brasil) == 0) stop("Erro: Nenhum dado do Brasil foi carregado.")
+
+# Renomear colunas
+dados_corte <- dados_corte %>%
+  rename(Inflacao = FP.CPI.TOTL.ZG, Desemprego = SL.UEM.TOTL.ZS) %>%
+  filter(!is.na(Inflacao) & !is.na(Desemprego))
+
+dados_brasil <- dados_brasil %>%
+  rename(Inflacao = FP.CPI.TOTL.ZG, Desemprego = SL.UEM.TOTL.ZS) %>%
+  filter(!is.na(Inflacao) & !is.na(Desemprego))
+
+# Verificar os primeiros dados carregados
+print(head(dados_corte))
+print(head(dados_brasil))
+```
+
+```{r}
+#| label: plot-grafico1
+#| warning: false
+#| echo: false
+
+ggplot(dados_corte, aes(x = Inflacao, y = Desemprego, label = country)) +
+  geom_point(color = "blue", size = 3) +
+  geom_text(size = 4, vjust = -0.5) +  # Teste com geom_text
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(
+    title = "Relatorio entre Inflaçao e Desemprego na America do Sul (2022)",
+    x = "Inflaçao (%)",
+    y = "Taxa de Desemprego (%)",
+    caption = "Fonte: Banco Mundial (WDI)"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+#| label: plot-grafico2
+#| warning: false
+#| echo: false
+
+ggplot(dados_brasil, aes(x = year)) +
+  geom_line(aes(y = Desemprego, color = "Desemprego"), size = 1.2) +
+  geom_line(aes(y = Inflacao / 2, color = "Inflaçao"), size = 1.2) +  # Ajustando escala
+  scale_y_continuous(
+    name = "Taxa de Desemprego (%)",
+    sec.axis = sec_axis(~ . * 2, name = "Inflaçao (%)")  # Ajuste de escala da infla????o
+  ) +
+  scale_color_manual(values = c("Desemprego" = "blue", "Inflaçao" = "red")) +
+  labs(
+    title = "Evoluçao da Inflaçao e do Desemprego no Brasil (1995-2023)",
+    x = "Ano",
+    color = "Indicador",
+    caption = "Fonte: Banco Mundial (WDI)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
+    legend.position = "top",
+    legend.title = element_blank()
+  )
+```
+
+## Meet Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Meet the penguins
+
+![](https://raw.githubusercontent.com/quarto-dev/quarto-web/main/docs/get-started/hello/rstudio/lter_penguins.png){style="float:right;" fig-alt="Illustration of three species of Palmer Archipelago penguins: Chinstrap, Gentoo, and Adelie. Artwork by @allison_horst." width="401"}
+
+The `penguins` data from the [**palmerpenguins**](https://allisonhorst.github.io/palmerpenguins "palmerpenguins R package") package contains size measurements for `{r} nrow(penguins)` penguins from three species observed on three islands in the Palmer Archipelago, Antarctica.
+
+The plot below shows the relationship between flipper and bill lengths of these penguins.
