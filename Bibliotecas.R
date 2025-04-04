@@ -1,0 +1,6 @@
+install.packages("tidyverse")
+install.packages("palmerpenguins")
+install.packages("ggplot2")
+install.packages("WDI")
+install.packages("dplyr")
+install.packages("ggrepel")
