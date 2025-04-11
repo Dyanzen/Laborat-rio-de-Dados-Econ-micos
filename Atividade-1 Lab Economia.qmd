@@ -1,0 +1,153 @@
+---
+title: "Dyan Paolo de Souza"
+format: 
+  html:
+    theme: darkly
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(palmerpenguins)
+library(ggplot2)
+library(WDI)
+library(dplyr)
+library(ggrepel)
+library(plotly)
+```
+
+```{r}
+#| label: load-data
+#| include: false
+
+options(scipen = 999)
+
+# Carregar pacotes necessários
+library(WDI)
+library(dplyr)
+
+# Definir variáveis para o novo gráfico
+variaveis <- c("NY.GDP.PCAP.CD", "SP.DYN.LE00.IN")  # PIB per capita e Expectativa de vida
+
+# Definir países da América do Sul (caso queira usar depois)
+paises_america_sul <- c("AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE")
+
+# Obter dados do Brasil entre 1990 e 2022
+dados_brasil <- WDI(
+  country = "BR",
+  indicator = variaveis,
+  start = 1990,
+  end = 2022
+)
+
+# Verifica se os dados foram carregados corretamente
+if (nrow(dados_brasil) == 0) stop("Erro: Nenhum dado do Brasil foi carregado.")
+
+# Renomear colunas para facilitar leitura
+dados_brasil <- dados_brasil %>%
+  rename(
+    PIB_per_capita = NY.GDP.PCAP.CD,
+    Expectativa_vida = SP.DYN.LE00.IN
+  ) %>%
+  filter(!is.na(PIB_per_capita) & !is.na(Expectativa_vida))
+
+# Visualização inicial dos dados carregados
+print(head(dados_brasil))
+```
+
+## Gráfico 1
+
+**Descrição:** Este gráfico mostra a evolução da **Expectativa de Vida** no Brasil de 1990 a 2022. A expectativa de vida é a média de anos que um indivíduo pode esperar viver, considerando as taxas de mortalidade da população em cada ano.
+
+**Variáveis:**
+
+-   **Eixo X (Ano):** Representa o período de 1990 a 2022.
+
+-   **Eixo Y (Expectativa de Vida):** Representa a expectativa de vida média, em anos, da população brasileira para cada ano.
+
+-   **Objetivo do Gráfico:** O gráfico foi projetado para visualizar como a expectativa de vida no Brasil evoluiu ao longo dos anos. Ao olhar para o gráfico, podemos perceber a tendência de aumento na expectativa de vida, refletindo melhorias no sistema de saúde, condições de vida e avanços socioeconômicos durante o período.
+
+**Fonte:**
+
+-    **Banco Mundial (WDI)**
+
+```{r}
+#| label: grafico1-interativo
+#| warning: false
+#| echo: false
+
+library(ggplot2)
+library(plotly)
+
+grafico1 <- ggplot(dados_brasil, aes(x = year, y = Expectativa_vida)) +
+  geom_point(color = "steelblue", size = 3) +
+  geom_line(color = "steelblue") +
+  labs(
+    title = "Expectativa de Vida no Brasil (1990–2022)",
+    x = "Ano",
+    y = "Expectativa de vida (anos)",
+    caption = "Fonte: Banco Mundial (WDI)"
+  ) +
+  theme_minimal()
+
+ggplotly(grafico1)
+```
+
+## Gráfico 2
+
+**Descrição:** Este gráfico compara a evolução do **PIB per capita** e da **Expectativa de Vida** no Brasil ao longo dos anos, mas com as variáveis **normalizadas** para um intervalo comum de 0 a 1. A normalização foi realizada para ajustar as escalas e facilitar a comparação entre essas duas variáveis, que possuem unidades e ordens de grandeza muito diferentes.
+
+**Variáveis:**
+
+-   **Eixo X (Ano):** Representa o período de 1990 a 2022.
+
+-   **Eixo Y (Indicadores Normalizados):** Ambos os indicadores foram normalizados, com valores que variam entre 0 e 1:
+
+-   **PIB per capita (normalizado):** Representa a evolução do PIB per capita no Brasil ao longo dos anos, com uma escala ajustada.
+
+-   **Expectativa de Vida (normalizada):** Representa a evolução da expectativa de vida no Brasil, também com uma escala ajustada.
+
+-   **Objetivo do Gráfico:** Este gráfico permite comparar a **Expectativa de Vida** e o **PIB per capita** de forma mais equilibrada, eliminando as discrepâncias nas escalas dessas variáveis. A normalização permite visualizar como as duas variáveis evoluíram de maneira similar ao longo do tempo, mesmo com suas diferentes magnitudes.
+
+**Fonte:**
+
+-    **Banco Mundial (WDI)**
+
+```{r}
+#| label: plot-grafico2
+#| warning: false
+#| echo: false
+
+library(ggplot2)
+library(plotly)
+
+# Normalização das variáveis para o intervalo [0, 1]
+dados_brasil <- dados_brasil %>%
+  mutate(
+    PIB_normalizado = (PIB_per_capita - min(PIB_per_capita)) / (max(PIB_per_capita) - min(PIB_per_capita)),
+    Expectativa_vida_normalizada = (Expectativa_vida - min(Expectativa_vida)) / (max(Expectativa_vida) - min(Expectativa_vida))
+  )
+
+# Criando o gráfico com as variáveis normalizadas
+grafico2 <- ggplot(dados_brasil, aes(x = year)) +
+  geom_line(aes(y = PIB_normalizado, color = "PIB per capita (normalizado)"), size = 1) +
+  geom_line(aes(y = Expectativa_vida_normalizada, color = "Expectativa de vida (normalizada)"), size = 1) +
+  scale_y_continuous(
+    name = "Indicadores Normalizados",
+    breaks = seq(0, 1, 0.2),
+    labels = scales::percent
+  ) +
+  labs(
+    title = "Brasil: PIB per capita e Expectativa de Vida (1990–2022) - Normalizados",
+    x = "Ano",
+    color = "Indicador",
+    caption = "Fonte: Banco Mundial (WDI)"
+  ) +
+  theme_minimal()
+
+ggplotly(grafico2)
+
+```
