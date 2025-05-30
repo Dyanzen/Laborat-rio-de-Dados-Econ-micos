@@ -1,0 +1,130 @@
+---
+title: "Dyan Paolo de Souza"
+format: 
+  html:
+    theme: darkly
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(palmerpenguins)
+library(ggplot2)
+library(WDI)
+library(dplyr)
+library(ggrepel)
+library(plotly)
+library(GetBCBData)
+library(zoo)
+library(gganimate)
+library(transformr)
+library(magick)
+library(lubridate)
+```
+
+```{r}
+#| label: load-data
+#| include: false
+
+options(scipen = 999)
+
+# Buscar dados da série 28313 (Índice de emprego formal - SC)
+dados_emprego <- gbcbd_get_series(
+  id = 28313,
+  first.date = "2004-01-01",
+  last.date = Sys.Date()
+)
+
+# Garantir que a coluna de data esteja nomeada e convertida corretamente
+# Se a coluna for 'ref.date', renomeie para 'date'; caso contrário, mantenha 'date'
+if("ref.date" %in% colnames(dados_emprego)) {
+  dados_emprego <- dados_emprego %>% rename(date = ref.date)
+}
+
+dados_emprego <- dados_emprego %>%
+  mutate(
+    date = as.Date(date),  # garante que date é do tipo Date
+    Ano = lubridate::year(date),
+    Mes = lubridate::month(date, label = TRUE, abbr = TRUE),
+    Frame = paste0(Ano, "-", sprintf("%02d", lubridate::month(date)))  # para uso em animações
+  ) %>%
+  arrange(date)
+
+anos <- range(dados_emprego$Ano)
+
+# Criar dataframe acumulado para animação (dados até cada ano)
+dados_anim <- do.call(rbind, lapply(unique(dados_emprego$Ano), function(y) {
+  dados_emprego %>%
+    filter(Ano <= y) %>%
+    mutate(Frame = y)
+}))
+```
+
+## Índice de emprego formal - Santa Catarina
+
+**Descrição:**
+
+Este gráfico apresenta a evolução temporal do **Índice de emprego formal** no estado de Santa Catarina, abrangendo o período de 2004 até o ano mais recente disponível. O índice mensura o nível de empregos formais registrados na região, considerando vínculos trabalhistas oficiais, que seguem as normas da legislação trabalhista brasileira.
+
+```{r}
+#| label: grafico1-animado
+#| warning: false
+#| echo: false
+#| message: false
+
+# Criar gráfico animado com frames apenas por ano e pausas entre eles
+grafico_animado <- plot_ly(
+  data = dados_anim,
+  x = ~date,
+  y = ~value,
+  type = 'scatter',
+  mode = 'lines+markers',
+  color = I("darkblue"),
+  marker = list(color = 'red', size = 8),
+  frame = ~Frame
+) %>%
+  layout(
+    title = "Índice de emprego formal - Santa Catarina",
+    xaxis = list(
+      title = "Ano",
+      range = c(min(dados_emprego$date), max(dados_emprego$date)),
+      tickformat = "%Y",
+      dtick = "M12",
+      tickmode = "linear"
+    ),
+    yaxis = list(
+      title = "Índice",
+      range = c(min(dados_emprego$value)*0.95, max(dados_emprego$value)*1.05)
+    )
+  ) %>%
+  animation_opts(
+    frame = 1500,      # tempo (ms) que cada frame permanece
+    transition = 0,    # sem transição animada entre frames
+    redraw = FALSE
+  ) %>%
+  animation_slider(
+    currentvalue = list(prefix = "Ano: "),
+    steps = unique(dados_anim$Frame)  # garante que o slider tenha só os anos
+  ) %>%
+  animation_button(
+    x = 1, xanchor = "right",
+    y = 0, yanchor = "bottom"
+  )
+
+grafico_animado
+```
+
+**O que o gráfico revela:**
+
+O gráfico permite visualizar as variações no mercado de trabalho formal de Santa Catarina ao longo dos anos. Podemos identificar tendências de crescimento ou retração no número de empregos formais, observar períodos de estabilidade ou oscilações sazonais, bem como impactos de eventos econômicos e sociais, como crises econômicas, mudanças em políticas públicas, ou outros fatores externos que influenciam o emprego regional.
+
+**Relevância econômica e social:**
+
+O emprego formal é um indicador-chave da saúde econômica de uma região, pois está associado à geração de renda estável, arrecadação tributária, acesso a direitos trabalhistas e benefícios sociais para os trabalhadores. Monitorar o índice de emprego formal em Santa Catarina é crucial para avaliar o desenvolvimento econômico regional, planejar políticas públicas eficazes de emprego e proteção social, além de entender como o mercado de trabalho responde a mudanças econômicas e tecnológicas. Impactos positivos no índice tendem a melhorar a qualidade de vida da população, enquanto quedas podem indicar vulnerabilidades sociais e econômicas.
+
+**Fonte dos dados:**
+
+-   Os dados utilizados para compor o índice são disponibilizados pelo **Banco Central do Brasil**, por meio do **Sistema Gerenciador de Séries Temporais (SGS)**, que agrega informações oficiais e atualizadas sobre diversos indicadores econômicos e sociais brasileiros.
